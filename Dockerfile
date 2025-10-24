@@ -1,29 +1,23 @@
-FROM nvidia/cuda:12.1.0-devel-ubuntu22.04
+FROM runpod/pytorch:2.1.0-py3.10-cuda11.8.0-devel
 
 WORKDIR /app
 
-# Install Python
-RUN apt-get update && apt-get install -y python3.11 python3-pip git
-
-# Install PyTorch first
-RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-
-# Install other deps
-RUN pip3 install --no-cache-dir \
+# Clean and install in one layer to save space
+RUN pip install --no-cache-dir \
     runpod \
     transformers==4.55.4 \
     accelerate \
     peft \
+    bitsandbytes \
     pillow \
     safetensors \
-    sentencepiece \
-    bitsandbytes
-
-# Install unsloth
-RUN pip3 install unsloth
+    sentencepiece && \
+    pip install --no-cache-dir unsloth && \
+    pip cache purge && \
+    rm -rf /root/.cache/pip
 
 COPY handler.py .
 
 ENV PYTHONUNBUFFERED=1
 
-CMD ["python3", "-u", "handler.py"]
+CMD ["python", "-u", "handler.py"]
